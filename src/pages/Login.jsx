@@ -24,16 +24,32 @@ export default function LoginPage(){
   //   }
   // }
 
-  const handle = async (e)=>{
+//   const handle = async (e)=>{
+//   e.preventDefault()
+//   try{
+//     setLoading(true)
+//     setError('')
+//     await login(email, password)
+// } catch (err) {
+//   console.error('Login error ->', err)   // 👈 add this line
+//   setError(err?.message || 'Login failed')
+// } finally {
+//     setLoading(false)
+//   }
+// }
+
+const handle = async (e)=>{
   e.preventDefault()
   try{
     setLoading(true)
     setError('')
++   console.log('[Login.jsx] submitting', { email })
     await login(email, password)
-} catch (err) {
-  console.error('Login error ->', err)   // 👈 add this line
-  setError(err?.message || 'Login failed')
-} finally {
++   console.log('[Login.jsx] login() resolved')
+  }catch(err){
++   console.error('[Login.jsx] login error →', err)
+    setError(err?.message || 'Login failed')
+  }finally{
     setLoading(false)
   }
 }

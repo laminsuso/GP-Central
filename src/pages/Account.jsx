@@ -43,6 +43,7 @@ export default function AccountPage(){
           <div className="flex flex-wrap gap-3">
             <Button as={Link} to="/profile" variant="secondary">My Profile</Button>
             <Button as={Link} to="/verify-identity" variant="secondary">Verify identity</Button>
+            <Button as={Link} to="/requests" variant="secondary">My Requests</Button>
             <Button onClick={updateRole('traveler')} disabled={busy}>Become traveler</Button>
             <Button onClick={updateRole('both')} variant="secondary" disabled={busy}>Become both</Button>
             <Button onClick={logout} variant="secondary">Logout</Button>
