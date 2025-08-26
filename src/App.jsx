@@ -14,6 +14,7 @@ import IdentityPage from './pages/Identity'
 import ProtectedRoute from './routes/ProtectedRoute'
 import RoleRoute from './routes/RoleRoute'
 import Home from './pages/Home'
+import ProfilePage from './pages/Profile'
 
 
 export default function App(){
@@ -29,6 +30,7 @@ export default function App(){
               <Route path="/devenir-gp" element={<ProtectedRoute><RoleRoute roles={['traveler']} requireIdentity><BecomeGPPage/></RoleRoute></ProtectedRoute>} />
               <Route path="/verify-identity" element={<ProtectedRoute><IdentityPage/></ProtectedRoute>} />
               <Route path="/account" element={<ProtectedRoute><AccountPage/></ProtectedRoute>} />
+               <Route path="/profile" element={<ProtectedRoute><ProfilePage/></ProtectedRoute>} />
               <Route path="/login" element={<LoginPage/>} />
               <Route path="/signup" element={<SignupPage/>} />
               <Route path="*" element={<div className="mx-auto max-w-md p-8"><h2 className="text-2xl font-bold mb-2">404</h2><p className="text-gray-600">Page not found.</p></div>} />

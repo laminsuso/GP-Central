@@ -11,18 +11,33 @@ export default function LoginPage(){
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
+  // const handle = async (e)=>{
+  //   e.preventDefault()
+  //   try {
+  //     setLoading(true)
+  //     setError('')
+  //     await login(email, password)
+  //   } catch (err) {
+  //     setError(err?.response?.data?.message || err?.message || 'Login failed')
+  //   } finally {
+  //     setLoading(false)
+  //   }
+  // }
+
   const handle = async (e)=>{
-    e.preventDefault()
-    try {
-      setLoading(true)
-      setError('')
-      await login(email, password)
-    } catch (err) {
-      setError(err?.response?.data?.message || err?.message || 'Login failed')
-    } finally {
-      setLoading(false)
-    }
+  e.preventDefault()
+  try{
+    setLoading(true)
+    setError('')
+    await login(email, password)
+} catch (err) {
+  console.error('Login error ->', err)   // 👈 add this line
+  setError(err?.message || 'Login failed')
+} finally {
+    setLoading(false)
   }
+}
+
 
   return (
     <section className="py-16">
