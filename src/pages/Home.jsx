@@ -35,7 +35,7 @@ export default function Home() {
       ]
     : [
         { icon: <Plane className="h-6 w-6 brand-text" />, title: 'Add travel plans', desc: 'Origin, destination, dates, and available capacity.' },
-        { icon: <CreditCard className="h-6 w-6 brand-text" />, title: 'Set your price', desc: '€/kg or per item — you control your rate.' },
+        { icon: <CreditCard className="h-6 w-6 brand-text" />, title: 'Set your price', desc: '$/kg or per item — you control your rate.' },
         { icon: <MessageCircle className="h-6 w-6 brand-text" />, title: 'Manage requests', desc: 'Accept shipments and chat to coordinate hand-off.' },
       ]
 
@@ -44,7 +44,7 @@ export default function Home() {
       header: 'For Shippers',
       items: [
         'Real-time tracking from reservation to delivery.',
-        'Transparent pricing (avg. 3–20 €/kg) with secure, escrowed payments.',
+        'Transparent pricing (avg. 3–20 $/kg) with secure, escrowed payments.',
         'Wide destination coverage beyond major routes.',
         'Ratings/reviews and reimbursement policy for covered issues.'
       ]
@@ -53,7 +53,7 @@ export default function Home() {
       header: 'For Travelers (GPs)',
       items: [
         'Amortize travel costs by selling luggage space.',
-        'Flexible pricing: set €/kg or per item.',
+        'Flexible pricing: set $/kg or per item.',
         'Manage requests and communicate in-app.',
         'Maintain a profile with routes and capacity.'
       ]
@@ -174,7 +174,7 @@ export default function Home() {
               { q: 'How does GP Central work?', a: 'Shippers find verified travelers (GPs) by route and date, book a carry, then track delivery in-app. Travelers publish routes and accept requests to monetize luggage space.' },
               { q: 'Is it secure?', a: 'Yes—identity verification, ratings/reviews, and escrowed payments protect both sides. Keep communication and transactions in-app.' },
               { q: 'What can I send?', a: 'Gifts, documents, clothing, and small personal items that comply with regulations. Prohibited/illegal goods are not allowed.' },
-              { q: 'How are costs determined?', a: 'By destination, weight, and parcel nature. Community averages range roughly 3–20 €/kg.' },
+              { q: 'How are costs determined?', a: 'By destination, weight, and parcel nature. Community averages range roughly 3–20 $/kg.' },
               { q: 'What if there’s a problem?', a: 'We offer 24/7 support. A reimbursement mechanism may apply to covered cases per the Terms.' },
               { q: 'How do I become a GP?', a: 'Create an account, verify your identity, publish your travel plans, and set your price. You’ll receive payment upon confirmed delivery.' },
             ].map((item, i) => (
