@@ -204,8 +204,8 @@ export default function Home() {
               <h3 className="font-semibold" style={{ color: 'var(--brand-ink)' }}>Message us</h3>
               <p className="text-sm text-gray-600 mt-1">Start a new conversation and we’ll reply quickly.</p>
               <div className="mt-4 flex gap-3">
-                <Button className="flex-1"><MessageCircle className="h-4 w-4" /> In-app chat</Button>
-                <Button variant="secondary" className="flex-1">Email</Button>
+                <Button as={Link} to="/support" className="flex-1"><MessageCircle className="h-4 w-4" /> In-app chat</Button>
+                <Button as={Link} to="/support-email" variant="secondary" className="flex-1">Email</Button>
               </div>
             </CardBody></Card>
             <Card><CardBody>
