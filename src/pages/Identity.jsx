@@ -3,6 +3,7 @@ import Button from '../components/ui/Button'
 import { Card, CardBody } from '../components/ui/Card'
 import { api } from '../services/api'
 import { useAuth } from '../contexts/AuthContext'
+import { identityApi } from '../services/identityApi'
 
 export default function IdentityPage(){
   const { fetchMe } = useAuth()
@@ -14,7 +15,7 @@ export default function IdentityPage(){
 
   const start = async ()=>{
     setLoading(true)
-    try { await api.post('/identity/start'); setStatus('started') }
+    try { await identityApi.post('/identity-start') ; setStatus('started') }
     finally { setLoading(false) }
   }
 
@@ -24,14 +25,14 @@ export default function IdentityPage(){
     try {
       const fd = new FormData()
       fd.append('document', file)
-      await api.post('/identity/upload', fd, { headers: { 'Content-Type': 'multipart/form-data' } })
+      await identityApi.post('/identity-upload', fd, { headers: { 'Content-Type':'multipart/form-data' } })
       setStatus('uploaded')
     } finally { setLoading(false) }
   }
 
   const submit = async ()=>{
     setLoading(true)
-    try { await api.post('/identity/submit'); setStatus('pending_review'); await fetchMe() }
+    try { await identityApi.post('/identity-submit'); setStatus('pending_review'); await fetchMe() }
     finally { setLoading(false) }
   }
 
