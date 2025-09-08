@@ -42,3 +42,25 @@ entrypoint = "./functions/identity-submit/index.ts"
 # Specifies static files to be bundled with the function. Supports glob patterns.
 # For example, if you want to serve static HTML pages in your function:
 # static_files = [ "./functions/identity-submit/*.html" ]
+
+[functions.identity-status]
+enabled = true
+verify_jwt = true
+import_map = "./functions/identity-status/deno.json"
+# Uncomment to specify a custom file path to the entrypoint.
+# Supported file extensions are: .ts, .js, .mjs, .jsx, .tsx
+entrypoint = "./functions/identity-status/index.ts"
+# Specifies static files to be bundled with the function. Supports glob patterns.
+# For example, if you want to serve static HTML pages in your function:
+# static_files = [ "./functions/identity-status/*.html" ]
+
+[functions.identity-mark]
+enabled = true
+verify_jwt = false
+import_map = "./functions/identity-mark/deno.json"
+# Uncomment to specify a custom file path to the entrypoint.
+# Supported file extensions are: .ts, .js, .mjs, .jsx, .tsx
+entrypoint = "./functions/identity-mark/index.ts"
+# Specifies static files to be bundled with the function. Supports glob patterns.
+# For example, if you want to serve static HTML pages in your function:
+# static_files = [ "./functions/identity-mark/*.html" ]

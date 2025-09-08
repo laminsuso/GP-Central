@@ -4,6 +4,8 @@ import { Card, CardBody } from '../components/ui/Card'
 import { api } from '../services/api'
 import { useAuth } from '../contexts/AuthContext'
 import { identityApi } from '../services/identityApi'
+import { supabase } from '../services/supabaseClient'
+import { identityApi } from '../services/identityApi' // <- this is the Axios client you pointed at functions
 
 export default function IdentityPage(){
   const { fetchMe } = useAuth()
@@ -30,17 +32,36 @@ export default function IdentityPage(){
     } finally { setLoading(false) }
   }
 
-  const submit = async ()=>{
-    setLoading(true)
-    try { await identityApi.post('/identity-submit'); setStatus('pending_review'); await fetchMe() }
-    finally { setLoading(false) }
+   const submit = async ()=>{
+    setLoading(true); setError('');
+    try { await identityApi.post('/identity-submit'); setStatus('pending_review'); await fetchMe() 
+      const t = setInterval(checkStatus, 4000)
+      setTimeout(() => clearInterval(t), 60000) 
+    }catch(e){
+      setError(e?.respone?.data?.message || e?.message || 'Submit Failed')
+    }finally { setLoading(false) }
   }
 
-  const checkStatus = async ()=>{
-    const { data } = await api.get('/identity/status')
-    setStatus(data?.status || status)
-    await fetchMe()
+  // Removed duplicate checkStatus function to avoid redeclaration error
+
+  const checkStatus = async () => {
+  try {
+    const { data: { session } } = await supabase.auth.getSession()
+    const res = await fetch(`${import.meta.env.VITE_SB_FUNCTIONS_BASE}/identity-status`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${session?.access_token || ''}`
+      }
+    })
+    const out = await res.json()
+    if (!res.ok) throw new Error(out?.error || 'Status check failed')
+    setStatus(out.status || (out.identity_verified ? 'verified' : status))
+    if (out.identity_verified) await fetchMe()
+  } catch (e) {
+    setError(e.message || 'Status check failed')
   }
+}
+
 
   const resendEmail = async ()=>{ await api.post('/identity/resend-email'); alert('Email sent') }
   const resendSMS   = async ()=>{ await api.post('/identity/resend-sms'); alert('SMS sent') }
@@ -106,6 +127,8 @@ export default function IdentityPage(){
             <span className="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-medium brand-text">Status</span>
             <span className="text-gray-700">{status}</span>
             <Button variant="secondary" onClick={checkStatus}>Refresh status</Button>
+            {/* <Button variant="secondary" onClick={checkStatus}>Refresh status</Button> */}
+
           </div>
         </CardBody></Card>
       </div>
