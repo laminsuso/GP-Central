@@ -3,6 +3,8 @@ import { createRoot } from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
 import App from './App.jsx'
 import './index.css'
+import 'leaflet/dist/leaflet.css'
+
 
 window.addEventListener('error', e => console.error('⛔ window error:', e.error || e.message))
 window.addEventListener('unhandledrejection', e => console.error('⛔ unhandled promise:', e.reason))

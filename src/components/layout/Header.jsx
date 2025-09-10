@@ -62,6 +62,10 @@ export default function Header(){
                   {user?.name ? user.name.split(' ')[0] : 'Account'}
                 </Button>
 
+                <Button as={Link} to="/my-shipments" variant="secondary">
+                    My Shipments
+                </Button>
+
                 {/* Only for travelers */}
                 {user?.roles?.includes('traveler') && (
                   <Button as={Link} to="/requests" variant="secondary">Requests</Button>

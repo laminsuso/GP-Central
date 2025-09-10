@@ -1,51 +1,68 @@
-import React, { useState } from 'react'
+import React, { useState, useRef, useEffect } from 'react'
 import Button from '../components/ui/Button'
 import { Card, CardBody } from '../components/ui/Card'
-import { api } from '../services/api'
+import { useI18n } from '../contexts/I18nContext'
 import { useAuth } from '../contexts/AuthContext'
-import { identityApi } from '../services/identityApi'
 import { supabase } from '../services/supabaseClient'
-import { identityApi } from '../services/identityApi' // <- this is the Axios client you pointed at functions
+import { identityApi } from '../services/identityApi'
 
 export default function IdentityPage(){
+  const { t } = useI18n()
   const { fetchMe } = useAuth()
-  const [status, setStatus] = useState('not_started')
+
+  const [status, setStatus] = useState('not_started') // not_started | started | uploaded | pending_review | verified | rejected
   const [file, setFile] = useState(null)
-  const [emailCode, setEmailCode] = useState('')
-  const [smsCode, setSmsCode] = useState('')
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+  const [ok, setOk] = useState('')
 
-  const start = async ()=>{
-    setLoading(true)
-    try { await identityApi.post('/identity-start') ; setStatus('started') }
-    finally { setLoading(false) }
-  }
+  const listRef = useRef(null)
 
-  const upload = async ()=>{
-    if (!file) return alert('Please choose a file')
-    setLoading(true)
-    try {
-      const fd = new FormData()
-      fd.append('document', file)
-      await identityApi.post('/identity-upload', fd, { headers: { 'Content-Type':'multipart/form-data' } })
-      setStatus('uploaded')
+  // ---- Helpers ----------------------------------------------------
+
+  const withUi = async (fn) => {
+    setLoading(true); setError(''); setOk('')
+    try { await fn() } catch (e) {
+      console.error('[identity] error:', e)
+      setError(e?.response?.data?.message || e?.message || 'Something went wrong')
     } finally { setLoading(false) }
   }
 
-   const submit = async ()=>{
-    setLoading(true); setError('');
-    try { await identityApi.post('/identity-submit'); setStatus('pending_review'); await fetchMe() 
-      const t = setInterval(checkStatus, 4000)
-      setTimeout(() => clearInterval(t), 60000) 
-    }catch(e){
-      setError(e?.respone?.data?.message || e?.message || 'Submit Failed')
-    }finally { setLoading(false) }
-  }
+  // ---- Backend calls ----------------------------------------------
 
-  // Removed duplicate checkStatus function to avoid redeclaration error
+  const start = async () => withUi(async () => {
+    console.log('[identity] POST /identity-start …')
+    const { data } = await identityApi.post('/identity-start')
+    console.log('[identity] start response:', data)
+    setStatus(data?.status || 'started')
+    setOk('Verification started.')
+  })
 
-  const checkStatus = async () => {
-  try {
+  const upload = async () => withUi(async () => {
+    if (!file) throw new Error('Please choose a file')
+    const fd = new FormData()
+    fd.append('document', file)
+    console.log('[identity] POST /identity-upload (multipart)')
+    const { data } = await identityApi.post('/identity-upload', fd, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    })
+    console.log('[identity] upload response:', data)
+    setStatus(data?.status || 'uploaded')
+    setOk('Document uploaded.')
+  })
+
+  const submit = async () => withUi(async () => {
+    console.log('[identity] POST /identity-submit …')
+    const { data } = await identityApi.post('/identity-submit')
+    console.log('[identity] submit response:', data)
+    setStatus(data?.status || 'pending_review')
+    setOk('Submitted for review.')
+    // Immediately check persisted status (will flip to verified later when webhook runs)
+    await checkStatus()
+  })
+
+  const checkStatus = async () => withUi(async () => {
+    console.log('[identity] GET /identity-status …')
     const { data: { session } } = await supabase.auth.getSession()
     const res = await fetch(`${import.meta.env.VITE_SB_FUNCTIONS_BASE}/identity-status`, {
       method: 'GET',
@@ -54,83 +71,101 @@ export default function IdentityPage(){
       }
     })
     const out = await res.json()
+    console.log('[identity] status response:', out)
     if (!res.ok) throw new Error(out?.error || 'Status check failed')
-    setStatus(out.status || (out.identity_verified ? 'verified' : status))
-    if (out.identity_verified) await fetchMe()
-  } catch (e) {
-    setError(e.message || 'Status check failed')
+    // prefer provider session status; fall back to profile flag
+    const next = out?.status || (out?.identity_verified ? 'verified' : status)
+    setStatus(next)
+    if (out?.identity_verified) {
+      await fetchMe()
+      setOk('Identity verified. Thank you!')
+    }
+  })
+
+  // ---- UI handlers ------------------------------------------------
+
+  const onFileChange = async (e) => {
+    const f = e.target.files?.[0] || null
+    setFile(f)
+    setOk(''); setError('')
+    // If user picks a file before pressing Start, try to start automatically (dev-friendly)
+    if (f && status === 'not_started') {
+      try { await start() } catch(_) { setStatus('started') } // soft fallback so Upload is enabled
+    }
   }
-}
 
+  const canUpload = !!file && ['started','uploaded','needs_document','reupload_requested'].includes(status)
+  const canSubmit = ['uploaded'].includes(status)
 
-  const resendEmail = async ()=>{ await api.post('/identity/resend-email'); alert('Email sent') }
-  const resendSMS   = async ()=>{ await api.post('/identity/resend-sms'); alert('SMS sent') }
-  const verifyEmail = async ()=>{ await api.post('/identity/verify-email', { code: emailCode }); alert('Email verified'); await fetchMe() }
-  const verifySMS   = async ()=>{ await api.post('/identity/verify-sms', { code: smsCode });   alert('Phone verified'); await fetchMe() }
+  // Smooth scroll new messages (optional)
+  useEffect(() => { listRef.current?.scrollTo?.({ top: listRef.current.scrollHeight }) }, [status])
 
   return (
     <section className="py-16">
       <div className="mx-auto max-w-2xl px-4 sm:px-6 lg:px-8">
-        <h2 className="text-3xl md:text-4xl font-bold tracking-tight" style={{color:'var(--brand-ink)'}}>Verify identity</h2>
+        <h2 className="text-3xl md:text-4xl font-bold tracking-tight" style={{color:'var(--brand-ink)'}}>
+          {t('verifyIdentity') || 'Verify identity'}
+        </h2>
+        <p className="text-sm text-gray-600 mt-1">
+          Upload a government ID and submit for review. We’ll notify you in the app and by email.
+        </p>
 
-        <Card><CardBody>
-          <ol className="space-y-4 text-sm text-gray-700">
-            <li className="flex items-start gap-3">
-              <span className="h-6 w-6 rounded-full brand-bg grid place-content-center text-white">1</span>
-              <div>
-                <p className="font-semibold">Start verification</p>
-                <p>Create a verification session.</p>
-                <Button className="mt-2" onClick={start} disabled={loading || !(status==='not_started' || status==='rejected')}>Start</Button>
-              </div>
-            </li>
+        <Card className="mt-4">
+          <CardBody>
+            <ol ref={listRef} className="space-y-4 text-sm text-gray-700">
+              <li className="flex items-start gap-3">
+                <span className="h-6 w-6 rounded-full brand-bg grid place-content-center text-white">1</span>
+                <div>
+                  <p className="font-semibold">Start verification</p>
+                  <p>We’ll create a verification session.</p>
+                  <Button className="mt-2" onClick={start} disabled={loading || status === 'started' || status === 'uploaded' || status === 'pending_review' || status === 'verified'}>
+                    {loading ? 'Please wait…' : 'Start'}
+                  </Button>
+                </div>
+              </li>
 
-            <li className="flex items-start gap-3">
-              <span className="h-6 w-6 rounded-full brand-bg grid place-content-center text-white">2</span>
-              <div>
-                <p className="font-semibold">Upload ID</p>
-                <p>Upload a passport or national ID.</p>
-                <input type="file" accept="image/*,application/pdf" onChange={(e)=>setFile(e.target.files?.[0]||null)} className="mt-2" />
-                <Button className="mt-2" onClick={upload} disabled={loading || !file || (status!=='started' && status!=='uploaded')}>Upload</Button>
-              </div>
-            </li>
+              <li className="flex items-start gap-3">
+                <span className="h-6 w-6 rounded-full brand-bg grid place-content-center text-white">2</span>
+                <div>
+                  <p className="font-semibold">Upload ID</p>
+                  <p>Upload a passport or national ID (front/back if applicable).</p>
+                  <input type="file" accept="image/*,application/pdf" onChange={onFileChange} className="mt-2" />
+                  <Button className="mt-2" onClick={upload} disabled={loading || !canUpload}>
+                    Upload
+                  </Button>
+                </div>
+              </li>
 
-            <li className="flex items-start gap-3">
-              <span className="h-6 w-6 rounded-full brand-bg grid place-content-center text-white">3</span>
-              <div>
-                <p className="font-semibold">Submit for review</p>
-                <p>We’ll verify the document and notify you.</p>
-                <Button className="mt-2" onClick={submit} disabled={loading || status!=='uploaded'}>Submit</Button>
-              </div>
-            </li>
-          </ol>
+              <li className="flex items-start gap-3">
+                <span className="h-6 w-6 rounded-full brand-bg grid place-content-center text-white">3</span>
+                <div>
+                  <p className="font-semibold">Submit for review</p>
+                  <p>We’ll verify document authenticity and selfie match (if required).</p>
+                  <Button className="mt-2" onClick={submit} disabled={loading || !canSubmit}>
+                    Submit
+                  </Button>
+                </div>
+              </li>
+            </ol>
 
-          <div className="mt-8 grid md:grid-cols-2 gap-6">
-            <div>
-              <h4 className="font-semibold mb-2">Email verification</h4>
-              <div className="flex gap-2">
-                <Button variant="secondary" onClick={resendEmail}>Resend verification email</Button>
-                <input value={emailCode} onChange={(e)=>setEmailCode(e.target.value)} placeholder="Enter code" className="rounded-xl border px-3 py-2" />
-                <Button onClick={verifyEmail}>Submit code</Button>
-              </div>
+            <div className="mt-6 flex items-center gap-3">
+              <span className="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-medium brand-text">
+                Status
+              </span>
+              <span className="text-gray-700">{status}</span>
+              <Button variant="secondary" onClick={checkStatus} disabled={loading}>
+                Refresh status
+              </Button>
             </div>
-            <div>
-              <h4 className="font-semibold mb-2">SMS verification</h4>
-              <div className="flex gap-2">
-                <Button variant="secondary" onClick={resendSMS}>Resend SMS code</Button>
-                <input value={smsCode} onChange={(e)=>setSmsCode(e.target.value)} placeholder="Enter code" className="rounded-xl border px-3 py-2" />
-                <Button onClick={verifySMS}>Submit code</Button>
-              </div>
-            </div>
-          </div>
 
-          <div className="mt-6 flex items-center gap-3">
-            <span className="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-medium brand-text">Status</span>
-            <span className="text-gray-700">{status}</span>
-            <Button variant="secondary" onClick={checkStatus}>Refresh status</Button>
-            {/* <Button variant="secondary" onClick={checkStatus}>Refresh status</Button> */}
+            {ok && <p className="mt-3 text-sm text-emerald-600">{ok}</p>}
+            {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
+          </CardBody>
+        </Card>
 
-          </div>
-        </CardBody></Card>
+        <p className="text-xs text-gray-500 mt-3">
+          For identity, payments, and tracking, keep all communications and transactions within GP Central.
+        </p>
       </div>
     </section>
   )
